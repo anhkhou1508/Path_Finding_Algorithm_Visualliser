@@ -91,6 +91,17 @@ A Java application that visualizes pathfinding algorithms on a grid, enhanced wi
    - Click "Start Adaptive Mode" to watch real-time path adaptation
    - Observe how the pathfinder adapts when obstacles move
 
+## Screenshots
+
+### Traditional Pathfinding Visualizer
+![Traditional Pathfinding](screenShots/normalVersion.png)
+
+### Machine Learning Version - Reinforcement Learning
+![ML Reinforcement Learning](screenShots/mlVersion_ReinforcementLearning.png)
+
+### Machine Learning Version - Adaptive Mode
+![ML Adaptive Mode](screenShots/mlVersion_AdaptiveMode.png)
+
 ## Project Structure
 
 - **PathFindingVisualizer.java** - Main class for traditional algorithms
