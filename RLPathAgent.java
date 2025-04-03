@@ -94,11 +94,6 @@ public class RLPathAgent {
         // Current state
         State state = new State(currentCell.row, currentCell.col);
         
-        // Ensure the state exists in the Q-table
-        if (!qTable.containsKey(state)) {
-            qTable.put(state, new double[NUM_ACTIONS]);
-        }
-        
         // Choose action using epsilon-greedy policy
         int action = chooseAction(state);
         
@@ -138,19 +133,12 @@ public class RLPathAgent {
         // Get new state
         State newState = new State(newRow, newCol);
         
-        // Ensure the new state exists in the Q-table
-        if (!qTable.containsKey(newState)) {
-            qTable.put(newState, new double[NUM_ACTIONS]);
-        }
-        
         // Update Q-value using Q-learning formula
         double[] qValues = qTable.get(state);
-        double[] newQValues = qTable.get(newState);
+        double[] newQValues = qTable.getOrDefault(newState, new double[NUM_ACTIONS]);
         
-        if (qValues != null && newQValues != null) {
-            double maxNewQ = Arrays.stream(newQValues).max().orElse(0);
-            qValues[action] = qValues[action] + learningRate * (reward + discountFactor * maxNewQ - qValues[action]);
-        }
+        double maxNewQ = Arrays.stream(newQValues).max().orElse(0);
+        qValues[action] = qValues[action] + learningRate * (reward + discountFactor * maxNewQ - qValues[action]);
         
         // Update episode stats
         currentStep++;
@@ -196,13 +184,8 @@ public class RLPathAgent {
             return (int) (Math.random() * NUM_ACTIONS);
         }
         
-        // Ensure the state exists in the Q-table
-        if (!qTable.containsKey(state)) {
-            qTable.put(state, new double[NUM_ACTIONS]);
-        }
-        
         // Exploitation - choose best action from Q-table
-        double[] qValues = qTable.get(state);
+        double[] qValues = qTable.getOrDefault(state, new double[NUM_ACTIONS]);
         int bestAction = 0;
         double bestValue = qValues[0];
         
@@ -231,14 +214,7 @@ public class RLPathAgent {
         
         while (current != endCell && steps < maxSteps) {
             State state = new State(current.row, current.col);
-            
-            // Ensure the state exists in the Q-table
-            if (!qTable.containsKey(state)) {
-                qTable.put(state, new double[NUM_ACTIONS]);
-                break; // Stop if we encounter an unknown state - can't continue path
-            }
-            
-            double[] qValues = qTable.get(state);
+            double[] qValues = qTable.getOrDefault(state, new double[NUM_ACTIONS]);
             
             // Find best action
             int bestAction = 0;
@@ -295,15 +271,13 @@ public class RLPathAgent {
                     cell.getType() != Cell.CellType.END) {
                     
                     State state = new State(r, c);
-                    if (qTable.containsKey(state)) {
-                        double[] qValues = qTable.get(state);
-                        double maxValue = Arrays.stream(qValues).max().orElse(0);
-                        
-                        // Normalize and color-code
-                        double normalizedValue = maxValue / maxQ;
-                        if (normalizedValue > 0.1) { // Only show significant values
-                            cell.setQValue(normalizedValue);
-                        }
+                    double[] qValues = qTable.getOrDefault(state, new double[NUM_ACTIONS]);
+                    double maxValue = Arrays.stream(qValues).max().orElse(0);
+                    
+                    // Normalize and color-code
+                    double normalizedValue = maxValue / maxQ;
+                    if (normalizedValue > 0.1) { // Only show significant values
+                        cell.setQValue(normalizedValue);
                     }
                 }
             }

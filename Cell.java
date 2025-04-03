@@ -26,7 +26,7 @@ public class Cell extends JPanel {
     public Cell previous;
     public int gScore = 0;
     public int fScore = 0;
-    public int distance = Integer.MAX_VALUE;
+    public int distance = Integer.MAX_VALUE; // Added for Dijkstra's algorithm
     
     // For Q-value visualization
     private double qValue = 0;

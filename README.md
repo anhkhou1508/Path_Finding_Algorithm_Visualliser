@@ -126,4 +126,4 @@ java PathFindingVisualizerML
 
 This project serves as a comprehensive demonstration of both classical algorithms and modern AI approaches to pathfinding problems. It visualizes the differences between deterministic algorithms and learning-based approaches, showing how AI can adapt to dynamic environments that traditional algorithms struggle with.
 
-The reinforcement learning implementation demonstrates how agents can learn optimal policies through exploration and exploitation, while the adaptive pathfinding shows how real-time planning can respond to unpredictable changes in the environment.
+The reinforcement learning implementation demonstrates how agents can learn optimal policies through exploration and exploitation, while the adaptive pathfinding shows how real-time planning can respond to unpredictable changes in the environment. 
