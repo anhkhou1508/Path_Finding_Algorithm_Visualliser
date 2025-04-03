@@ -1,45 +1,117 @@
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * Represents a cell in the grid
+ * Displays different states visually
+ */
 public class Cell extends JPanel {
-    // Define static color constants for consistency
-    public static final Color EMPTY_COLOR = Color.WHITE;
-    public static final Color WALL_COLOR = new Color(45, 45, 45);
-    public static final Color START_COLOR = new Color(50, 200, 50);
-    public static final Color END_COLOR = new Color(200, 50, 50);
-    public static final Color VISITED_COLOR = new Color(64, 206, 227);
-    public static final Color CONSIDERING_COLOR = new Color(175, 238, 238);
-    public static final Color PATH_COLOR = new Color(255, 215, 0);
-    
+    // Cell types
     public enum CellType {
-        EMPTY, WALL, START, END, VISITED, CONSIDERING, PATH
+        EMPTY,
+        WALL,
+        START,
+        END,
+        VISITED,
+        CONSIDERING,
+        PATH
     }
     
-    public int row, col;
-    public int distance = Integer.MAX_VALUE; // For Dijkstra
-    public int gScore = Integer.MAX_VALUE;   // For A*
-    public int fScore = Integer.MAX_VALUE;   // For A*
-    public Cell previous = null;
+    // Cell properties
+    public final int row;
+    public final int col;
+    private CellType type;
     
-    private CellType type = CellType.EMPTY;
+    // For pathfinding algorithms
+    public Cell previous;
+    public int gScore = 0;
+    public int fScore = 0;
+    public int distance = Integer.MAX_VALUE;
+    
+    // For Q-value visualization
+    private double qValue = 0;
+    private boolean showQValue = false;
+    
+    // For dynamic danger zone visualization
+    private boolean isDangerZone = false;
+    private Color dangerColor = null;
+    
+    // For obstacle trail visualization
+    private boolean isTrail = false;
+    private Color trailColor = null;
+    
+    // Colors
+    public static final Color EMPTY_COLOR = Color.WHITE;
+    public static final Color WALL_COLOR = Color.BLACK;
+    public static final Color START_COLOR = Color.GREEN;
+    public static final Color END_COLOR = Color.RED;
+    public static final Color VISITED_COLOR = new Color(175, 238, 238);  // Pale Turquoise
+    public static final Color CONSIDERING_COLOR = new Color(135, 206, 250);  // Light Sky Blue
+    public static final Color PATH_COLOR = new Color(255, 255, 0);  // Yellow
     
     public Cell(int row, int col) {
         this.row = row;
         this.col = col;
+        this.type = CellType.EMPTY;
+        
+        setBackground(EMPTY_COLOR);
+        setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         setPreferredSize(new Dimension(30, 30));
-        setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        setType(CellType.EMPTY);
     }
     
-    public CellType getType() {
-        return type;
-    }
-    
+    /**
+     * Sets the type of this cell
+     */
     public void setType(CellType type) {
         this.type = type;
         updateAppearance();
     }
     
+    /**
+     * Gets the type of this cell
+     */
+    public CellType getType() {
+        return type;
+    }
+    
+    /**
+     * Sets the Q-value for visualization
+     */
+    public void setQValue(double value) {
+        this.qValue = value;
+        this.showQValue = true;
+        repaint();
+    }
+    
+    /**
+     * Clears Q-value visualization
+     */
+    public void clearQValue() {
+        this.showQValue = false;
+        repaint();
+    }
+    
+    /**
+     * Sets or clears the danger zone visualization
+     */
+    public void setDangerZone(boolean isDanger, Color color) {
+        this.isDangerZone = isDanger;
+        this.dangerColor = color;
+        repaint();
+    }
+    
+    /**
+     * Sets or clears the trail visualization for obstacle movement
+     */
+    public void setTrail(boolean isTrail, Color color) {
+        this.isTrail = isTrail;
+        this.trailColor = color;
+        repaint();
+    }
+    
+    /**
+     * Updates the cell's appearance based on its type
+     */
     private void updateAppearance() {
         switch (type) {
             case EMPTY:
@@ -72,70 +144,50 @@ public class Cell extends JPanel {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         
-        // Add smooth anti-aliasing
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Add visual details based on cell type
-        if (type == CellType.START) {
-            drawStartSymbol(g2d);
-        } else if (type == CellType.END) {
-            drawEndSymbol(g2d);
-        } else if (type == CellType.PATH) {
-            drawPathSymbol(g2d);
+        // Draw Q-value heat map if needed
+        if (showQValue && type != CellType.WALL) {
+            // Use red to blue gradient based on Q-value
+            float blend = (float) qValue;
+            Color heatColor = new Color(
+                (int) (RLPathAgent.HEAT_MAP_HIGH.getRed() * blend + RLPathAgent.HEAT_MAP_LOW.getRed() * (1-blend)),
+                (int) (RLPathAgent.HEAT_MAP_HIGH.getGreen() * blend + RLPathAgent.HEAT_MAP_LOW.getGreen() * (1-blend)),
+                (int) (RLPathAgent.HEAT_MAP_HIGH.getBlue() * blend + RLPathAgent.HEAT_MAP_LOW.getBlue() * (1-blend)),
+                180  // semi-transparent
+            );
+            
+            g2d.setColor(heatColor);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+            
+            // Optional: show numerical Q-value
+            /*
+            g2d.setColor(Color.BLACK);
+            g2d.drawString(String.format("%.2f", qValue), 5, getHeight() - 5);
+            */
         }
-    }
-    
-    private void drawStartSymbol(Graphics2D g2d) {
-        int size = Math.min(getWidth(), getHeight()) / 2;
-        int x = getWidth() / 2 - size / 2;
-        int y = getHeight() / 2 - size / 2;
         
-        g2d.setColor(new Color(0, 100, 0));
-        g2d.fillOval(x, y, size, size);
+        // Draw the danger zone overlay if enabled
+        if (isDangerZone && dangerColor != null && type != CellType.WALL) {
+            g2d.setColor(dangerColor);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+            
+            // Add a small warning indicator
+            g2d.setColor(Color.WHITE);
+            g2d.drawString("!", getWidth()/2-3, getHeight()/2+5);
+        }
         
-        g2d.setColor(Color.WHITE);
-        g2d.setStroke(new BasicStroke(2));
-        
-        // Draw an 'S'
-        int sx = getWidth() / 2;
-        int sy = getHeight() / 2;
-        g2d.drawLine(sx-3, sy-3, sx+3, sy-3);
-        g2d.drawLine(sx-3, sy-3, sx-3, sy);
-        g2d.drawLine(sx-3, sy, sx+3, sy);
-        g2d.drawLine(sx+3, sy, sx+3, sy+3);
-        g2d.drawLine(sx+3, sy+3, sx-3, sy+3);
-    }
-    
-    private void drawEndSymbol(Graphics2D g2d) {
-        int size = Math.min(getWidth(), getHeight()) / 2;
-        int x = getWidth() / 2 - size / 2;
-        int y = getHeight() / 2 - size / 2;
-        
-        g2d.setColor(new Color(139, 0, 0));
-        g2d.fillOval(x, y, size, size);
-        
-        g2d.setColor(Color.WHITE);
-        g2d.setStroke(new BasicStroke(2));
-        int ex = getWidth() / 2;
-        int ey = getHeight() / 2;
-        
-        // Draw a flag
-        g2d.drawLine(ex-3, ey-5, ex-3, ey+5);
-        g2d.drawLine(ex-3, ey-5, ex+4, ey-2);
-        g2d.drawLine(ex-3, ey-1, ex+4, ey+2);
-    }
-    
-    private void drawPathSymbol(Graphics2D g2d) {
-        int size = 4;
-        int x = getWidth() / 2 - size / 2;
-        int y = getHeight() / 2 - size / 2;
-        
-        g2d.setColor(new Color(218, 165, 32));
-        g2d.fillOval(x, y, size, size);
+        // Draw the trail overlay if enabled
+        if (isTrail && trailColor != null && type != CellType.WALL) {
+            g2d.setColor(trailColor);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+            
+            // Optional: add small dots to indicate trail
+            g2d.setColor(new Color(255, 255, 255, 150));
+            g2d.fillOval(getWidth()/2-3, getHeight()/2-3, 6, 6);
+        }
     }
     
     @Override
     public String toString() {
-        return "Cell(" + row + ", " + col + ")";
+        return "Cell[" + row + "," + col + "]";
     }
 } 
